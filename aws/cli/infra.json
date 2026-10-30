@@ -1,0 +1,651 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "URL shortener self-contained AWS network, private Postgres RDS, Cognito, ECR, roles, App Runner connector",
+  "Parameters": {
+    "DbClass": {
+      "Type": "String",
+      "Default": "db.t4g.micro",
+      "Description": "RDS instance class; charges apply"
+    },
+    "CallbackUrl": {
+      "Type": "String",
+      "Default": "http://localhost:5173/",
+      "Description": "React OAuth redirect. Use HTTPS when hosting frontend."
+    }
+  },
+  "Resources": {
+    "Vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.88.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Sub": "${AWS::StackName}-vpc"
+            }
+          }
+        ]
+      }
+    },
+    "Igw": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {}
+    },
+    "IgwAttach": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "InternetGatewayId": {
+          "Ref": "Igw"
+        }
+      }
+    },
+    "PublicA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.88.0.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true
+      }
+    },
+    "PublicB": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.88.1.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": true
+      }
+    },
+    "PrivateA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.88.10.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false
+      }
+    },
+    "PrivateB": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.88.11.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            1,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false
+      }
+    },
+    "PublicRt": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        }
+      }
+    },
+    "PublicDefault": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRt"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "Igw"
+        }
+      },
+      "DependsOn": "IgwAttach"
+    },
+    "PublicAAssoc": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicA"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRt"
+        }
+      }
+    },
+    "PublicBAssoc": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicB"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRt"
+        }
+      }
+    },
+    "NatEip": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      }
+    },
+    "Nat": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicA"
+        },
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "NatEip",
+            "AllocationId"
+          ]
+        }
+      },
+      "DependsOn": "IgwAttach"
+    },
+    "PrivateRt": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        }
+      }
+    },
+    "PrivateDefault": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PrivateRt"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "Nat"
+        }
+      }
+    },
+    "PrivateAAssoc": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateA"
+        },
+        "RouteTableId": {
+          "Ref": "PrivateRt"
+        }
+      }
+    },
+    "PrivateBAssoc": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateB"
+        },
+        "RouteTableId": {
+          "Ref": "PrivateRt"
+        }
+      }
+    },
+    "AppSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "GroupDescription": "AppRunner outbound only, no inbound ingress",
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "DbSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "GroupDescription": "PostgreSQL accepts inbound only from App Runner VPC connector",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 5432,
+            "ToPort": 5432,
+            "SourceSecurityGroupId": {
+              "Ref": "AppSg"
+            }
+          }
+        ]
+      }
+    },
+    "Connector": {
+      "Type": "AWS::AppRunner::VpcConnector",
+      "Properties": {
+        "VpcConnectorName": {
+          "Fn::Sub": "${AWS::StackName}-connector"
+        },
+        "Subnets": [
+          {
+            "Ref": "PrivateA"
+          },
+          {
+            "Ref": "PrivateB"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "AppSg"
+          }
+        ]
+      }
+    },
+    "DbSubnet": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "Private PostgreSQL subnets",
+        "SubnetIds": [
+          {
+            "Ref": "PrivateA"
+          },
+          {
+            "Ref": "PrivateB"
+          }
+        ]
+      }
+    },
+    "DbPassword": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "GenerateSecretString": {
+          "PasswordLength": 40,
+          "ExcludePunctuation": true
+        },
+        "Description": "Shortener PostgreSQL password; injected securely to App Runner"
+      }
+    },
+    "VisitorSecret": {
+      "Type": "AWS::SecretsManager::Secret",
+      "Properties": {
+        "GenerateSecretString": {
+          "PasswordLength": 56,
+          "ExcludePunctuation": true
+        },
+        "Description": "HMAC visitor hashing secret"
+      }
+    },
+    "Database": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "Engine": "postgres",
+        "DBInstanceClass": {
+          "Ref": "DbClass"
+        },
+        "AllocatedStorage": "20",
+        "StorageType": "gp3",
+        "StorageEncrypted": true,
+        "DBName": "shortener",
+        "MasterUsername": "shortener",
+        "MasterUserPassword": {
+          "Fn::Sub": "{{resolve:secretsmanager:${DbPassword}:SecretString}}"
+        },
+        "DBSubnetGroupName": {
+          "Ref": "DbSubnet"
+        },
+        "VPCSecurityGroups": [
+          {
+            "Ref": "DbSg"
+          }
+        ],
+        "PubliclyAccessible": false,
+        "BackupRetentionPeriod": 7,
+        "MultiAZ": false,
+        "DeletionProtection": false,
+        "AutoMinorVersionUpgrade": true,
+        "CopyTagsToSnapshot": true
+      },
+      "DeletionPolicy": "Snapshot",
+      "UpdateReplacePolicy": "Snapshot"
+    },
+    "UserPool": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "UserPoolName": {
+          "Fn::Sub": "${AWS::StackName}-users"
+        },
+        "AutoVerifiedAttributes": [
+          "email"
+        ],
+        "UsernameAttributes": [
+          "email"
+        ],
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": false
+        },
+        "Policies": {
+          "PasswordPolicy": {
+            "MinimumLength": 12,
+            "RequireLowercase": true,
+            "RequireUppercase": true,
+            "RequireNumbers": true,
+            "RequireSymbols": true
+          }
+        },
+        "MfaConfiguration": "OFF",
+        "DeletionProtection": "INACTIVE",
+        "UsernameConfiguration": {
+          "CaseSensitive": false
+        }
+      }
+    },
+    "Client": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "UserPoolId": {
+          "Ref": "UserPool"
+        },
+        "ClientName": "shortener-spa-public",
+        "GenerateSecret": false,
+        "ExplicitAuthFlows": [
+          "ALLOW_USER_PASSWORD_AUTH",
+          "ALLOW_REFRESH_TOKEN_AUTH"
+        ],
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthFlows": [
+          "code"
+        ],
+        "AllowedOAuthScopes": [
+          "openid",
+          "profile",
+          "email"
+        ],
+        "CallbackURLs": [
+          {
+            "Ref": "CallbackUrl"
+          }
+        ],
+        "LogoutURLs": [
+          {
+            "Ref": "CallbackUrl"
+          }
+        ],
+        "SupportedIdentityProviders": [
+          "COGNITO"
+        ],
+        "PreventUserExistenceErrors": "ENABLED"
+      }
+    },
+    "PoolDomain": {
+      "Type": "AWS::Cognito::UserPoolDomain",
+      "Properties": {
+        "UserPoolId": {
+          "Ref": "UserPool"
+        },
+        "Domain": {
+          "Fn::Sub": "${AWS::StackName}-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    },
+    "NodeRepo": {
+      "Type": "AWS::ECR::Repository",
+      "Properties": {
+        "RepositoryName": {
+          "Fn::Sub": "${AWS::StackName}-node"
+        },
+        "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "ImageTagMutability": "IMMUTABLE",
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\": [{\"rulePriority\": 1, \"description\": \"Keep last 12 tagged images\", \"selection\": {\"tagStatus\": \"any\", \"countType\": \"imageCountMoreThan\", \"countNumber\": 12}, \"action\": {\"type\": \"expire\"}}]}"
+        }
+      }
+    },
+    "SpringRepo": {
+      "Type": "AWS::ECR::Repository",
+      "Properties": {
+        "RepositoryName": {
+          "Fn::Sub": "${AWS::StackName}-spring"
+        },
+        "EmptyOnDelete": true,
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "ImageTagMutability": "IMMUTABLE",
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\": [{\"rulePriority\": 1, \"description\": \"Keep last 12 tagged images\", \"selection\": {\"tagStatus\": \"any\", \"countType\": \"imageCountMoreThan\", \"countNumber\": 12}, \"action\": {\"type\": \"expire\"}}]}"
+        }
+      }
+    },
+    "AccessRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "build.apprunner.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess"
+        ]
+      }
+    },
+    "InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "tasks.apprunner.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "runtime-secrets-read",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:GetSecretValue"
+                  ],
+                  "Resource": [
+                    {
+                      "Ref": "DbPassword"
+                    },
+                    {
+                      "Ref": "VisitorSecret"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "NodeRepositoryUri": {
+      "Value": {
+        "Fn::GetAtt": [
+          "NodeRepo",
+          "RepositoryUri"
+        ]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-NodeRepositoryUri"
+        }
+      }
+    },
+    "SpringRepositoryUri": {
+      "Value": {
+        "Fn::GetAtt": [
+          "SpringRepo",
+          "RepositoryUri"
+        ]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-SpringRepositoryUri"
+        }
+      }
+    },
+    "VpcConnectorArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Connector",
+          "VpcConnectorArn"
+        ]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-VpcConnectorArn"
+        }
+      }
+    },
+    "DbEndpoint": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Database",
+          "Endpoint.Address"
+        ]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-DbEndpoint"
+        }
+      }
+    },
+    "DbPasswordArn": {
+      "Value": {
+        "Ref": "DbPassword"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-DbPasswordArn"
+        }
+      }
+    },
+    "VisitorSecretArn": {
+      "Value": {
+        "Ref": "VisitorSecret"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-VisitorSecretArn"
+        }
+      }
+    },
+    "CognitoPoolId": {
+      "Value": {
+        "Ref": "UserPool"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-CognitoPoolId"
+        }
+      }
+    },
+    "CognitoClientId": {
+      "Value": {
+        "Ref": "Client"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-CognitoClientId"
+        }
+      }
+    },
+    "CognitoDomain": {
+      "Value": {
+        "Fn::Sub": "https://${AWS::StackName}-${AWS::AccountId}-${AWS::Region}.auth.${AWS::Region}.amazoncognito.com"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-CognitoDomain"
+        }
+      }
+    },
+    "EcrAccessRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "AccessRole",
+          "Arn"
+        ]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-EcrAccessRoleArn"
+        }
+      }
+    },
+    "InstanceRoleArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "InstanceRole",
+          "Arn"
+        ]
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-InstanceRoleArn"
+        }
+      }
+    }
+  }
+}

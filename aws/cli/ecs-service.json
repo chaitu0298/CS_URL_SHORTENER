@@ -1,0 +1,702 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "URL shortener public HTTPS API via API Gateway VPC link -> internal ALB -> ECS Fargate -> private RDS",
+  "Parameters": {
+    "InfraStack": {
+      "Type": "String"
+    },
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PrivateSubnetA": {
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "PrivateSubnetB": {
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "AppSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup::Id"
+    },
+    "AppKind": {
+      "Type": "String",
+      "AllowedValues": [
+        "node",
+        "spring"
+      ]
+    },
+    "ImageUri": {
+      "Type": "String"
+    },
+    "CorsOrigins": {
+      "Type": "String",
+      "Default": "http://localhost:5173"
+    }
+  },
+  "Conditions": {
+    "IsNode": {
+      "Fn::Equals": [
+        {
+          "Ref": "AppKind"
+        },
+        "node"
+      ]
+    }
+  },
+  "Resources": {
+    "Cluster": {
+      "Type": "AWS::ECS::Cluster",
+      "Properties": {
+        "ClusterName": {
+          "Fn::Sub": "${AWS::StackName}-cluster"
+        },
+        "ClusterSettings": [
+          {
+            "Name": "containerInsights",
+            "Value": "enabled"
+          }
+        ]
+      }
+    },
+    "Logs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/ecs/${AWS::StackName}"
+        },
+        "RetentionInDays": 14
+      }
+    },
+    "ApiAccessLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/apigateway/${AWS::StackName}"
+        },
+        "RetentionInDays": 14
+      }
+    },
+    "ExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+        ],
+        "Policies": [
+          {
+            "PolicyName": "secrets",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "secretsmanager:GetSecretValue",
+                  "Resource": [
+                    {
+                      "Fn::ImportValue": {
+                        "Fn::Sub": "${InfraStack}-DbPasswordArn"
+                      }
+                    },
+                    {
+                      "Fn::ImportValue": {
+                        "Fn::Sub": "${InfraStack}-VisitorSecretArn"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "TaskRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      }
+    },
+    "ApiLinkSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "API Gateway VPC link to internal ALB",
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "10.88.0.0/16"
+          }
+        ]
+      }
+    },
+    "AlbSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Private ALB listener from API Gateway link",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "SourceSecurityGroupId": {
+              "Ref": "ApiLinkSg"
+            }
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "EcsSgIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Ref": "AppSecurityGroup"
+        },
+        "IpProtocol": "tcp",
+        "FromPort": {
+          "Fn::If": [
+            "IsNode",
+            3000,
+            8080
+          ]
+        },
+        "ToPort": {
+          "Fn::If": [
+            "IsNode",
+            3000,
+            8080
+          ]
+        },
+        "SourceSecurityGroupId": {
+          "Ref": "AlbSg"
+        }
+      }
+    },
+    "Alb": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Scheme": "internal",
+        "Type": "application",
+        "IpAddressType": "ipv4",
+        "Subnets": [
+          {
+            "Ref": "PrivateSubnetA"
+          },
+          {
+            "Ref": "PrivateSubnetB"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "AlbSg"
+          }
+        ]
+      }
+    },
+    "TargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "TargetType": "ip",
+        "Protocol": "HTTP",
+        "Port": {
+          "Fn::If": [
+            "IsNode",
+            3000,
+            8080
+          ]
+        },
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "HealthCheckProtocol": "HTTP",
+        "HealthCheckPath": "/ready",
+        "HealthCheckIntervalSeconds": 30,
+        "HealthCheckTimeoutSeconds": 10,
+        "HealthyThresholdCount": 2,
+        "UnhealthyThresholdCount": 5,
+        "Matcher": {
+          "HttpCode": "200"
+        }
+      }
+    },
+    "Listener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "LoadBalancerArn": {
+          "Ref": "Alb"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "DefaultActions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "VpcLink": {
+      "Type": "AWS::ApiGatewayV2::VpcLink",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-vpclink"
+        },
+        "SubnetIds": [
+          {
+            "Ref": "PrivateSubnetA"
+          },
+          {
+            "Ref": "PrivateSubnetB"
+          }
+        ],
+        "SecurityGroupIds": [
+          {
+            "Ref": "ApiLinkSg"
+          }
+        ]
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-https-api"
+        },
+        "ProtocolType": "HTTP",
+        "DisableExecuteApiEndpoint": false
+      }
+    },
+    "Integration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "HTTP_PROXY",
+        "IntegrationMethod": "ANY",
+        "IntegrationUri": {
+          "Ref": "Listener"
+        },
+        "ConnectionType": "VPC_LINK",
+        "ConnectionId": {
+          "Ref": "VpcLink"
+        },
+        "PayloadFormatVersion": "1.0",
+        "TimeoutInMillis": 29000
+      }
+    },
+    "ApiRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "$default",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "ApiStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "AccessLogSettings": {
+          "DestinationArn": {
+            "Fn::GetAtt": [
+              "ApiAccessLogs",
+              "Arn"
+            ]
+          },
+          "Format": "{\"requestId\":\"$context.requestId\",\"method\":\"$context.httpMethod\",\"path\":\"$context.path\",\"status\":\"$context.status\",\"latency\":\"$context.responseLatency\"}"
+        }
+      }
+    },
+    "TaskDefinition": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": {
+          "Fn::Sub": "${AWS::StackName}-task"
+        },
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "NetworkMode": "awsvpc",
+        "Cpu": {
+          "Fn::If": [
+            "IsNode",
+            "512",
+            "1024"
+          ]
+        },
+        "Memory": {
+          "Fn::If": [
+            "IsNode",
+            "1024",
+            "2048"
+          ]
+        },
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "ExecutionRole",
+            "Arn"
+          ]
+        },
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "TaskRole",
+            "Arn"
+          ]
+        },
+        "ContainerDefinitions": [
+          {
+            "Name": "api",
+            "Image": {
+              "Ref": "ImageUri"
+            },
+            "Essential": true,
+            "PortMappings": [
+              {
+                "ContainerPort": {
+                  "Fn::If": [
+                    "IsNode",
+                    3000,
+                    8080
+                  ]
+                },
+                "Protocol": "tcp"
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "PORT",
+                "Value": {
+                  "Fn::If": [
+                    "IsNode",
+                    "3000",
+                    "8080"
+                  ]
+                }
+              },
+              {
+                "Name": "BASE_URL",
+                "Value": {
+                  "Fn::GetAtt": [
+                    "HttpApi",
+                    "ApiEndpoint"
+                  ]
+                }
+              },
+              {
+                "Name": "CORS_ORIGINS",
+                "Value": {
+                  "Ref": "CorsOrigins"
+                }
+              },
+              {
+                "Name": "AUTH_MODE",
+                "Value": "jwt"
+              },
+              {
+                "Name": "NODE_ENV",
+                "Value": "production"
+              },
+              {
+                "Name": "APP_ENV",
+                "Value": "production"
+              },
+              {
+                "Name": "TRUST_PROXY",
+                "Value": "true"
+              },
+              {
+                "Name": "PGHOST",
+                "Value": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-DbEndpoint"
+                  }
+                }
+              },
+              {
+                "Name": "PGPORT",
+                "Value": "5432"
+              },
+              {
+                "Name": "PGDATABASE",
+                "Value": "shortener"
+              },
+              {
+                "Name": "PGUSER",
+                "Value": "shortener"
+              },
+              {
+                "Name": "PGSSL_CA_FILE",
+                "Value": "/etc/ssl/rds/global-bundle.pem"
+              },
+              {
+                "Name": "COGNITO_USER_POOL_ID",
+                "Value": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-CognitoPoolId"
+                  }
+                }
+              },
+              {
+                "Name": "COGNITO_CLIENT_ID",
+                "Value": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-CognitoClientId"
+                  }
+                }
+              },
+              {
+                "Name": "COGNITO_ISSUER",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "https://cognito-idp.",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ".amazonaws.com/",
+                      {
+                        "Fn::ImportValue": {
+                          "Fn::Sub": "${InfraStack}-CognitoPoolId"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              },
+              {
+                "Name": "DB_USERNAME",
+                "Value": "shortener"
+              },
+              {
+                "Name": "JDBC_URL",
+                "Value": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "jdbc:postgresql://",
+                      {
+                        "Fn::ImportValue": {
+                          "Fn::Sub": "${InfraStack}-DbEndpoint"
+                        }
+                      },
+                      ":5432/shortener?sslmode=verify-full&sslrootcert=/etc/ssl/rds/global-bundle.pem"
+                    ]
+                  ]
+                }
+              },
+              {
+                "Name": "PGPOOL_MAX",
+                "Value": "3"
+              },
+              {
+                "Name": "DB_POOL_MAX",
+                "Value": "3"
+              },
+              {
+                "Name": "CLEANUP_ENABLED",
+                "Value": "false"
+              }
+            ],
+            "Secrets": [
+              {
+                "Name": "PGPASSWORD",
+                "ValueFrom": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-DbPasswordArn"
+                  }
+                }
+              },
+              {
+                "Name": "DB_PASSWORD",
+                "ValueFrom": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-DbPasswordArn"
+                  }
+                }
+              },
+              {
+                "Name": "VISITOR_HASH_SECRET",
+                "ValueFrom": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-VisitorSecretArn"
+                  }
+                }
+              }
+            ],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "Logs"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "api"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "EcsService": {
+      "Type": "AWS::ECS::Service",
+      "DependsOn": [
+        "Listener",
+        "EcsSgIngress"
+      ],
+      "Properties": {
+        "ServiceName": {
+          "Fn::Sub": "${AWS::StackName}-service"
+        },
+        "Cluster": {
+          "Ref": "Cluster"
+        },
+        "TaskDefinition": {
+          "Ref": "TaskDefinition"
+        },
+        "LaunchType": "FARGATE",
+        "PlatformVersion": "LATEST",
+        "DesiredCount": 1,
+        "HealthCheckGracePeriodSeconds": 240,
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "Subnets": [
+              {
+                "Ref": "PrivateSubnetA"
+              },
+              {
+                "Ref": "PrivateSubnetB"
+              }
+            ],
+            "SecurityGroups": [
+              {
+                "Ref": "AppSecurityGroup"
+              }
+            ]
+          }
+        },
+        "LoadBalancers": [
+          {
+            "ContainerName": "api",
+            "ContainerPort": {
+              "Fn::If": [
+                "IsNode",
+                3000,
+                8080
+              ]
+            },
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            }
+          }
+        ],
+        "DeploymentConfiguration": {
+          "MaximumPercent": 200,
+          "MinimumHealthyPercent": 100,
+          "DeploymentCircuitBreaker": {
+            "Enable": true,
+            "Rollback": true
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "HttpApi",
+          "ApiEndpoint"
+        ]
+      },
+      "Description": "Public HTTPS API Gateway endpoint with $default stage"
+    },
+    "ClusterName": {
+      "Value": {
+        "Ref": "Cluster"
+      }
+    },
+    "ServiceName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "EcsService",
+          "Name"
+        ]
+      }
+    },
+    "ApiId": {
+      "Value": {
+        "Ref": "HttpApi"
+      }
+    },
+    "LogGroup": {
+      "Value": {
+        "Ref": "Logs"
+      }
+    },
+    "HostingMode": {
+      "Value": "ecs-fargate-api-gateway"
+    },
+    "TargetGroupArn": {
+      "Value": {
+        "Ref": "TargetGroup"
+      }
+    }
+  }
+}

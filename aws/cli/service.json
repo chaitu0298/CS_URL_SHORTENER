@@ -1,0 +1,298 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "URL shortener public HTTPS API on App Runner",
+  "Parameters": {
+    "InfraStack": {
+      "Type": "String"
+    },
+    "AppKind": {
+      "Type": "String",
+      "AllowedValues": [
+        "node",
+        "spring"
+      ]
+    },
+    "ImageUri": {
+      "Type": "String"
+    },
+    "ApiBaseUrl": {
+      "Type": "String",
+      "Default": "https://example.invalid"
+    },
+    "CorsOrigins": {
+      "Type": "String",
+      "Default": "http://localhost:5173"
+    }
+  },
+  "Conditions": {
+    "IsNode": {
+      "Fn::Equals": [
+        {
+          "Ref": "AppKind"
+        },
+        "node"
+      ]
+    }
+  },
+  "Resources": {
+    "ApiService": {
+      "Type": "AWS::AppRunner::Service",
+      "Properties": {
+        "ServiceName": {
+          "Fn::Sub": "${InfraStack}-${AppKind}-api"
+        },
+        "SourceConfiguration": {
+          "AutoDeploymentsEnabled": false,
+          "AuthenticationConfiguration": {
+            "AccessRoleArn": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "${InfraStack}-EcrAccessRoleArn"
+              }
+            }
+          },
+          "ImageRepository": {
+            "ImageIdentifier": {
+              "Ref": "ImageUri"
+            },
+            "ImageRepositoryType": "ECR",
+            "ImageConfiguration": {
+              "Port": {
+                "Fn::If": [
+                  "IsNode",
+                  "3000",
+                  "8080"
+                ]
+              },
+              "RuntimeEnvironmentVariables": [
+                {
+                  "Name": "PORT",
+                  "Value": {
+                    "Fn::If": [
+                      "IsNode",
+                      "3000",
+                      "8080"
+                    ]
+                  }
+                },
+                {
+                  "Name": "BASE_URL",
+                  "Value": {
+                    "Ref": "ApiBaseUrl"
+                  }
+                },
+                {
+                  "Name": "CORS_ORIGINS",
+                  "Value": {
+                    "Ref": "CorsOrigins"
+                  }
+                },
+                {
+                  "Name": "AUTH_MODE",
+                  "Value": "jwt"
+                },
+                {
+                  "Name": "NODE_ENV",
+                  "Value": "production"
+                },
+                {
+                  "Name": "APP_ENV",
+                  "Value": "production"
+                },
+                {
+                  "Name": "TRUST_PROXY",
+                  "Value": "true"
+                },
+                {
+                  "Name": "PGHOST",
+                  "Value": {
+                    "Fn::ImportValue": {
+                      "Fn::Sub": "${InfraStack}-DbEndpoint"
+                    }
+                  }
+                },
+                {
+                  "Name": "PGPORT",
+                  "Value": "5432"
+                },
+                {
+                  "Name": "PGDATABASE",
+                  "Value": "shortener"
+                },
+                {
+                  "Name": "PGUSER",
+                  "Value": "shortener"
+                },
+                {
+                  "Name": "PGSSL_CA_FILE",
+                  "Value": "/etc/ssl/rds/global-bundle.pem"
+                },
+                {
+                  "Name": "COGNITO_USER_POOL_ID",
+                  "Value": {
+                    "Fn::ImportValue": {
+                      "Fn::Sub": "${InfraStack}-CognitoPoolId"
+                    }
+                  }
+                },
+                {
+                  "Name": "COGNITO_CLIENT_ID",
+                  "Value": {
+                    "Fn::ImportValue": {
+                      "Fn::Sub": "${InfraStack}-CognitoClientId"
+                    }
+                  }
+                },
+                {
+                  "Name": "COGNITO_ISSUER",
+                  "Value": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "https://cognito-idp.",
+                        {
+                          "Ref": "AWS::Region"
+                        },
+                        ".amazonaws.com/",
+                        {
+                          "Fn::ImportValue": {
+                            "Fn::Sub": "${InfraStack}-CognitoPoolId"
+                          }
+                        }
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Name": "DB_USERNAME",
+                  "Value": "shortener"
+                },
+                {
+                  "Name": "JDBC_URL",
+                  "Value": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "jdbc:postgresql://",
+                        {
+                          "Fn::ImportValue": {
+                            "Fn::Sub": "${InfraStack}-DbEndpoint"
+                          }
+                        },
+                        ":5432/shortener?sslmode=verify-full&sslrootcert=/etc/ssl/rds/global-bundle.pem"
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Name": "PGPOOL_MAX",
+                  "Value": "3"
+                },
+                {
+                  "Name": "DB_POOL_MAX",
+                  "Value": "3"
+                },
+                {
+                  "Name": "CLEANUP_ENABLED",
+                  "Value": "false"
+                }
+              ],
+              "RuntimeEnvironmentSecrets": [
+                {
+                  "Name": "PGPASSWORD",
+                  "Value": {
+                    "Fn::ImportValue": {
+                      "Fn::Sub": "${InfraStack}-DbPasswordArn"
+                    }
+                  }
+                },
+                {
+                  "Name": "DB_PASSWORD",
+                  "Value": {
+                    "Fn::ImportValue": {
+                      "Fn::Sub": "${InfraStack}-DbPasswordArn"
+                    }
+                  }
+                },
+                {
+                  "Name": "VISITOR_HASH_SECRET",
+                  "Value": {
+                    "Fn::ImportValue": {
+                      "Fn::Sub": "${InfraStack}-VisitorSecretArn"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "InstanceConfiguration": {
+          "Cpu": "1 vCPU",
+          "Memory": "2 GB",
+          "InstanceRoleArn": {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${InfraStack}-InstanceRoleArn"
+            }
+          }
+        },
+        "NetworkConfiguration": {
+          "EgressConfiguration": {
+            "EgressType": "VPC",
+            "VpcConnectorArn": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "${InfraStack}-VpcConnectorArn"
+              }
+            }
+          }
+        },
+        "HealthCheckConfiguration": {
+          "Protocol": "HTTP",
+          "Path": "/ready",
+          "Interval": 10,
+          "Timeout": 10,
+          "HealthyThreshold": 1,
+          "UnhealthyThreshold": 5
+        },
+        "AutoScalingConfigurationArn": {
+          "Fn::GetAtt": [
+            "Scaling",
+            "AutoScalingConfigurationArn"
+          ]
+        }
+      }
+    },
+    "Scaling": {
+      "Type": "AWS::AppRunner::AutoScalingConfiguration",
+      "Properties": {
+        "MinSize": 1,
+        "MaxSize": 3,
+        "MaxConcurrency": 50
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Fn::GetAtt": [
+                "ApiService",
+                "ServiceUrl"
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    "ServiceArn": {
+      "Value": {
+        "Fn::GetAtt": [
+          "ApiService",
+          "ServiceArn"
+        ]
+      }
+    }
+  }
+}

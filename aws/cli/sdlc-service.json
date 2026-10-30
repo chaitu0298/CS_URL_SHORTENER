@@ -1,0 +1,679 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Isolated AWS-hosted SDLC dashboard control plane: Cognito JWT, allowlisted admin, Fargate + encrypted EFS, private ALB, HTTP API; no AWS code deploy permissions.",
+  "Parameters": {
+    "InfraStack": {
+      "Type": "String"
+    },
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "PrivateSubnetA": {
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "PrivateSubnetB": {
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "ImageUri": {
+      "Type": "String"
+    },
+    "CorsOrigins": {
+      "Type": "String",
+      "Default": "http://localhost:5173"
+    },
+    "AdminSubs": {
+      "Type": "String",
+      "AllowedPattern": "^([0-9a-fA-F-]{36})(,[0-9a-fA-F-]{36})*$",
+      "Description": "Cognito administrator subject UUID(s), comma separated, never emails."
+    }
+  },
+  "Resources": {
+    "RepoLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/ecs/${AWS::StackName}"
+        },
+        "RetentionInDays": 14
+      }
+    },
+    "Cluster": {
+      "Type": "AWS::ECS::Cluster",
+      "Properties": {
+        "ClusterName": {
+          "Fn::Sub": "${AWS::StackName}-cluster"
+        }
+      }
+    },
+    "TaskSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "SDLC bounded executor in private subnet, ALB ingress only",
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "LinkSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Private API Gateway VPC Link",
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "10.88.0.0/16"
+          }
+        ]
+      }
+    },
+    "AlbSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Private ALB from VPC Link",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "SourceSecurityGroupId": {
+              "Ref": "LinkSg"
+            }
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "TaskIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Ref": "TaskSg"
+        },
+        "IpProtocol": "tcp",
+        "FromPort": 3100,
+        "ToPort": 3100,
+        "SourceSecurityGroupId": {
+          "Ref": "AlbSg"
+        }
+      }
+    },
+    "EfsSg": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "GroupDescription": "Only SDLC tasks reach EFS over NFS",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 2049,
+            "ToPort": 2049,
+            "SourceSecurityGroupId": {
+              "Ref": "TaskSg"
+            }
+          }
+        ]
+      }
+    },
+    "Fs": {
+      "Type": "AWS::EFS::FileSystem",
+      "Properties": {
+        "Encrypted": true,
+        "PerformanceMode": "generalPurpose",
+        "ThroughputMode": "bursting",
+        "LifecyclePolicies": [
+          {
+            "TransitionToIA": "AFTER_30_DAYS"
+          }
+        ],
+        "BackupPolicy": {
+          "Status": "ENABLED"
+        }
+      }
+    },
+    "AccessPoint": {
+      "Type": "AWS::EFS::AccessPoint",
+      "Properties": {
+        "FileSystemId": {
+          "Ref": "Fs"
+        },
+        "PosixUser": {
+          "Uid": "1000",
+          "Gid": "1000"
+        },
+        "RootDirectory": {
+          "Path": "/runs",
+          "CreationInfo": {
+            "OwnerUid": "1000",
+            "OwnerGid": "1000",
+            "Permissions": "0750"
+          }
+        }
+      }
+    },
+    "MountA": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": {
+          "Ref": "Fs"
+        },
+        "SubnetId": {
+          "Ref": "PrivateSubnetA"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "EfsSg"
+          }
+        ]
+      }
+    },
+    "MountB": {
+      "Type": "AWS::EFS::MountTarget",
+      "Properties": {
+        "FileSystemId": {
+          "Ref": "Fs"
+        },
+        "SubnetId": {
+          "Ref": "PrivateSubnetB"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "EfsSg"
+          }
+        ]
+      }
+    },
+    "Alb": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Scheme": "internal",
+        "Type": "application",
+        "Subnets": [
+          {
+            "Ref": "PrivateSubnetA"
+          },
+          {
+            "Ref": "PrivateSubnetB"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "AlbSg"
+          }
+        ]
+      }
+    },
+    "TargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "Port": 3100,
+        "Protocol": "HTTP",
+        "TargetType": "ip",
+        "HealthCheckPath": "/sdlc/health",
+        "HealthCheckIntervalSeconds": 30,
+        "HealthCheckTimeoutSeconds": 10,
+        "HealthyThresholdCount": 2,
+        "UnhealthyThresholdCount": 3,
+        "Matcher": {
+          "HttpCode": "200"
+        }
+      }
+    },
+    "Listener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "LoadBalancerArn": {
+          "Ref": "Alb"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "DefaultActions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "Link": {
+      "Type": "AWS::ApiGatewayV2::VpcLink",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-vpclink"
+        },
+        "SubnetIds": [
+          {
+            "Ref": "PrivateSubnetA"
+          },
+          {
+            "Ref": "PrivateSubnetB"
+          }
+        ],
+        "SecurityGroupIds": [
+          {
+            "Ref": "LinkSg"
+          }
+        ]
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-control-api"
+        },
+        "ProtocolType": "HTTP",
+        "CorsConfiguration": {
+          "AllowOrigins": {
+            "Fn::Split": [
+              ",",
+              {
+                "Ref": "CorsOrigins"
+              }
+            ]
+          },
+          "AllowHeaders": [
+            "Authorization",
+            "Content-Type"
+          ],
+          "AllowMethods": [
+            "GET",
+            "POST",
+            "OPTIONS"
+          ],
+          "MaxAge": 600
+        }
+      }
+    },
+    "Integration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "HTTP_PROXY",
+        "IntegrationMethod": "ANY",
+        "IntegrationUri": {
+          "Ref": "Listener"
+        },
+        "ConnectionType": "VPC_LINK",
+        "ConnectionId": {
+          "Ref": "Link"
+        },
+        "PayloadFormatVersion": "1.0",
+        "TimeoutInMillis": 29000
+      }
+    },
+    "JwtAuthorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "AuthorizerType": "JWT",
+        "IdentitySource": [
+          "$request.header.Authorization"
+        ],
+        "Name": "cognito-access-token",
+        "JwtConfiguration": {
+          "Audience": [
+            {
+              "Fn::ImportValue": {
+                "Fn::Sub": "${InfraStack}-CognitoClientId"
+              }
+            }
+          ],
+          "Issuer": {
+            "Fn::Sub": [
+              "https://cognito-idp.${AWS::Region}.amazonaws.com/${Pool}",
+              {
+                "Pool": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-CognitoPoolId"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "ProtectedRoutes": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "ANY /sdlc/{proxy+}",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "JwtAuthorizer"
+        },
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "HealthRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "GET /sdlc/health",
+        "AuthorizationType": "NONE",
+        "Target": {
+          "Fn::Join": [
+            "",
+            [
+              "integrations/",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "Stage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "ThrottlingBurstLimit": 20,
+          "ThrottlingRateLimit": 5
+        }
+      }
+    },
+    "ExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+        ]
+      }
+    },
+    "TaskRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ecs-tasks.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      }
+    },
+    "TaskDef": {
+      "Type": "AWS::ECS::TaskDefinition",
+      "Properties": {
+        "Family": {
+          "Fn::Sub": "${AWS::StackName}-task"
+        },
+        "RequiresCompatibilities": [
+          "FARGATE"
+        ],
+        "NetworkMode": "awsvpc",
+        "Cpu": "512",
+        "Memory": "1024",
+        "ExecutionRoleArn": {
+          "Fn::GetAtt": [
+            "ExecutionRole",
+            "Arn"
+          ]
+        },
+        "TaskRoleArn": {
+          "Fn::GetAtt": [
+            "TaskRole",
+            "Arn"
+          ]
+        },
+        "Volumes": [
+          {
+            "Name": "runs",
+            "EFSVolumeConfiguration": {
+              "FilesystemId": {
+                "Ref": "Fs"
+              },
+              "TransitEncryption": "ENABLED",
+              "RootDirectory": "/",
+              "AuthorizationConfig": {
+                "AccessPointId": {
+                  "Ref": "AccessPoint"
+                },
+                "IAM": "DISABLED"
+              }
+            }
+          }
+        ],
+        "ContainerDefinitions": [
+          {
+            "Name": "sdlc",
+            "Image": {
+              "Ref": "ImageUri"
+            },
+            "Essential": true,
+            "PortMappings": [
+              {
+                "ContainerPort": 3100,
+                "Protocol": "tcp"
+              }
+            ],
+            "Environment": [
+              {
+                "Name": "SDLC_HOST",
+                "Value": "0.0.0.0"
+              },
+              {
+                "Name": "SDLC_PORT",
+                "Value": "3100"
+              },
+              {
+                "Name": "SDLC_PRIVATE_VPC",
+                "Value": "true"
+              },
+              {
+                "Name": "SDLC_RUNS_DIR",
+                "Value": "/data/runs"
+              },
+              {
+                "Name": "SDLC_CORS_ORIGINS",
+                "Value": {
+                  "Ref": "CorsOrigins"
+                }
+              },
+              {
+                "Name": "SDLC_ADMIN_SUBS",
+                "Value": {
+                  "Ref": "AdminSubs"
+                }
+              },
+              {
+                "Name": "COGNITO_USER_POOL_ID",
+                "Value": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-CognitoPoolId"
+                  }
+                }
+              },
+              {
+                "Name": "COGNITO_CLIENT_ID",
+                "Value": {
+                  "Fn::ImportValue": {
+                    "Fn::Sub": "${InfraStack}-CognitoClientId"
+                  }
+                }
+              },
+              {
+                "Name": "NODE_ENV",
+                "Value": "production"
+              }
+            ],
+            "MountPoints": [
+              {
+                "SourceVolume": "runs",
+                "ContainerPath": "/data/runs",
+                "ReadOnly": false
+              }
+            ],
+            "LogConfiguration": {
+              "LogDriver": "awslogs",
+              "Options": {
+                "awslogs-group": {
+                  "Ref": "RepoLogGroup"
+                },
+                "awslogs-region": {
+                  "Ref": "AWS::Region"
+                },
+                "awslogs-stream-prefix": "sdlc"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "Service": {
+      "Type": "AWS::ECS::Service",
+      "Properties": {
+        "Cluster": {
+          "Ref": "Cluster"
+        },
+        "ServiceName": {
+          "Fn::Sub": "${AWS::StackName}-service"
+        },
+        "LaunchType": "FARGATE",
+        "PlatformVersion": "LATEST",
+        "DesiredCount": 1,
+        "TaskDefinition": {
+          "Ref": "TaskDef"
+        },
+        "HealthCheckGracePeriodSeconds": 180,
+        "DeploymentConfiguration": {
+          "DeploymentCircuitBreaker": {
+            "Enable": true,
+            "Rollback": true
+          }
+        },
+        "LoadBalancers": [
+          {
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            },
+            "ContainerName": "sdlc",
+            "ContainerPort": 3100
+          }
+        ],
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "AssignPublicIp": "DISABLED",
+            "Subnets": [
+              {
+                "Ref": "PrivateSubnetA"
+              },
+              {
+                "Ref": "PrivateSubnetB"
+              }
+            ],
+            "SecurityGroups": [
+              {
+                "Ref": "TaskSg"
+              }
+            ]
+          }
+        }
+      },
+      "DependsOn": [
+        "Listener",
+        "MountA",
+        "MountB",
+        "TaskIngress"
+      ]
+    }
+  },
+  "Outputs": {
+    "SdlcApiUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "HttpApi",
+          "ApiEndpoint"
+        ]
+      }
+    },
+    "ClusterName": {
+      "Value": {
+        "Ref": "Cluster"
+      }
+    },
+    "ServiceName": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Service",
+          "Name"
+        ]
+      }
+    },
+    "FileSystemId": {
+      "Value": {
+        "Ref": "Fs"
+      }
+    },
+    "AuthMode": {
+      "Value": "Cognito-JWT+admin-sub-allowlist"
+    }
+  }
+}

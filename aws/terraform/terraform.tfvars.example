@@ -1,0 +1,15 @@
+aws_region = "us-east-1"
+name = "interview-shortener-node"
+app_kind = "node" # or spring
+vpc_id = "vpc-REPLACE"
+public_subnet_ids = ["subnet-PUBLIC-A", "subnet-PUBLIC-B"]
+private_subnet_ids = ["subnet-PRIVATE-A", "subnet-PRIVATE-B"]
+image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/interview-shortener-node:1"
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/REPLACE"
+api_domain = "go.example.com"
+route53_zone_id = "ZREPLACE"
+cors_origins = "https://app.example.com,http://localhost:5173"
+cognito_user_pool_id = "us-east-1_REPLACE"
+cognito_client_id = "REPLACE"
+visitor_secret_arn = "arn:aws:secretsmanager:us-east-1:123456789012:secret:REPLACE"
+multi_az = false
