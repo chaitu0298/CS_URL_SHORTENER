@@ -1,0 +1,15 @@
+{
+  "aiAdvisory": null,
+  "requirement": "Make shortened URLs expire quickly by default.",
+  "scenario": "ambiguous",
+  "revision": 2,
+  "acceptanceCriteria": [
+    "Default expiration is exactly 48 hours in UTC",
+    "Caller-provided expiration remains authoritative"
+  ],
+  "assumptions": [
+    "No autonomous deployment",
+    "Changes restricted to documented repository files"
+  ],
+  "unresolved": []
+}

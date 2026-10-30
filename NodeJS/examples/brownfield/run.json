@@ -1,0 +1,219 @@
+{
+  "id": "f0b1b683-937c-420f-bb6f-6980a95b1227",
+  "type": "brownfield",
+  "requirement": "Reject support-desk custom alias without breaking existing links",
+  "ttlHours": null,
+  "revision": 1,
+  "status": "COMPLETE",
+  "reason": null,
+  "createdAt": "2026-10-28T22:38:46.548Z",
+  "updatedAt": "2026-10-28T22:38:46.750Z",
+  "approval": {
+    "design_approval": {
+      "actor": "Demo Reviewer",
+      "reason": "Reviewed architecture, security and acceptance criteria",
+      "revision": 1,
+      "at": "2026-10-28T22:38:46.550Z",
+      "dependencyDigests": [
+        "0c3a20651cbc0964c8a20f61c5f13726bd9cf25228758ba103dacc7019e2c5c3",
+        "3697b7752f16a0019bd3e79645b89599e5f897a14c85e41395f85e134bda1f68",
+        "8697b18f9f03c93f738a5de84e5fb97502fb78b6e91c11f53f715b5d8953316c",
+        "3a4780142af646d912f5830834a1e0763941c90538122a735465f6de5a32d555"
+      ]
+    },
+    "release_approval": {
+      "actor": "Demo Reviewer",
+      "reason": "Validated tests and reviewed residual risks",
+      "revision": 1,
+      "at": "2026-10-28T22:38:46.748Z",
+      "dependencyDigests": [
+        "4e6abf4c16b5bce89546a5a0164c8fdb67983083281b0d62d44147e8a9251d01"
+      ]
+    }
+  },
+  "decisions": [
+    {
+      "gate": "design_approval",
+      "actor": "Demo Reviewer",
+      "reason": "Reviewed architecture, security and acceptance criteria",
+      "revision": 1
+    },
+    {
+      "gate": "release_approval",
+      "actor": "Demo Reviewer",
+      "reason": "Validated tests and reviewed residual risks",
+      "revision": 1
+    }
+  ],
+  "nodes": {
+    "intake": {
+      "id": "intake",
+      "deps": [],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/intake.json",
+      "digest": "d6bdf971a5b449788f2e668855ddeda10aa3790808d694b76973d3c960f9f2d5"
+    },
+    "impact": {
+      "id": "impact",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/impact.json",
+      "digest": "0c3a20651cbc0964c8a20f61c5f13726bd9cf25228758ba103dacc7019e2c5c3"
+    },
+    "architecture": {
+      "id": "architecture",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/architecture.md",
+      "digest": "3697b7752f16a0019bd3e79645b89599e5f897a14c85e41395f85e134bda1f68"
+    },
+    "threat_model": {
+      "id": "threat_model",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/threat_model.json",
+      "digest": "8697b18f9f03c93f738a5de84e5fb97502fb78b6e91c11f53f715b5d8953316c"
+    },
+    "test_plan": {
+      "id": "test_plan",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/test_plan.json",
+      "digest": "3a4780142af646d912f5830834a1e0763941c90538122a735465f6de5a32d555"
+    },
+    "design_approval": {
+      "id": "design_approval",
+      "deps": [
+        "impact",
+        "architecture",
+        "threat_model",
+        "test_plan"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "ms": 0,
+      "artifact": "artifacts/design_approval.json",
+      "digest": "02d103fd6fff97e507c6c796b14c1595aabe7e93c5737c8dd6336a500716ce91"
+    },
+    "implement": {
+      "id": "implement",
+      "deps": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 1,
+      "artifact": "artifacts/implement.json",
+      "digest": "55858c201ad0496b6eac3d66a4fab0b664e0187d572507bca0387c0ba58f4363"
+    },
+    "generate_tests": {
+      "id": "generate_tests",
+      "deps": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/generate_tests.json",
+      "digest": "896a25a843a3ea64e9712a25ae7470d2b1d630623a280f628f52aca89f4d7e71"
+    },
+    "qa": {
+      "id": "qa",
+      "deps": [
+        "implement",
+        "generate_tests"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 195,
+      "artifact": "artifacts/qa.json",
+      "digest": "2c5b0bd9d0f7f84d3faf78116702d5f461fb26c25f263b196f3fc10bbb3d6e00"
+    },
+    "security": {
+      "id": "security",
+      "deps": [
+        "implement"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/security.json",
+      "digest": "2940c4fe72dcd858797ce010c41c8a7c61e3a5f0618bca94d212030487ddda62"
+    },
+    "docs": {
+      "id": "docs",
+      "deps": [
+        "qa"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/docs.md",
+      "digest": "0aac4ada4b706fc98cc60b12077f18c7933d4c1196b095a8c9a4d65603d81baa"
+    },
+    "release_assessment": {
+      "id": "release_assessment",
+      "deps": [
+        "docs",
+        "security"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/release_assessment.json",
+      "digest": "4e6abf4c16b5bce89546a5a0164c8fdb67983083281b0d62d44147e8a9251d01"
+    },
+    "release_approval": {
+      "id": "release_approval",
+      "deps": [
+        "release_assessment"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "ms": 0,
+      "artifact": "artifacts/release_approval.json",
+      "digest": "1a5e4f0e720a823f8556c57c7814e152604bdf95a5177b9f25f2f91eadc6cb87"
+    },
+    "summary": {
+      "id": "summary",
+      "deps": [
+        "release_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/summary.json",
+      "digest": "9a7c0a9ea202a70ee133c1d5aaf2566104b72183874cc17695e7ec46d5bd102b"
+    }
+  },
+  "metrics": {
+    "retries": 0,
+    "rollbacks": 0,
+    "failures": 0,
+    "recoveries": 0,
+    "mttrMs": 0
+  },
+  "fault": {
+    "qaOnce": false,
+    "qaAlways": false,
+    "used": false
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "aiAdvisory": null,
+  "requirement": "Add an authenticated bulk revoke API so an owner can revoke multiple short links in one request.",
+  "scenario": "greenfield",
+  "revision": 1,
+  "acceptanceCriteria": [
+    "POST bulk revoke requires Cognito/auth and validates 1–50 unique codes",
+    "Only links owned by the caller can be revoked",
+    "Other users’ links remain unchanged"
+  ],
+  "assumptions": [
+    "No autonomous deployment",
+    "Changes restricted to documented repository files"
+  ],
+  "unresolved": []
+}

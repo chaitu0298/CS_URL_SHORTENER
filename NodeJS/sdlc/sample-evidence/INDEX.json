@@ -1,0 +1,56 @@
+[
+  {
+    "scenario": "greenfield",
+    "id": "0ebc6f99-f171-4ab7-a901-76be37049514",
+    "status": "COMPLETE",
+    "revision": 1,
+    "metrics": {
+      "progressPercent": 100,
+      "runSucceeded": true,
+      "runTerminal": true,
+      "retryAttempts": 1,
+      "rollbackCount": 0,
+      "meanTimeToRecoveryMs": 365,
+      "endToEndLatencyMs": 399,
+      "approvalCount": 2
+    },
+    "auditVerified": true,
+    "approvals": "SIMULATED - NEVER REPRESENT AS HUMAN APPROVAL"
+  },
+  {
+    "scenario": "brownfield",
+    "id": "c0407b20-bdef-4f1e-8179-38eb31f0f32b",
+    "status": "COMPLETE",
+    "revision": 1,
+    "metrics": {
+      "progressPercent": 100,
+      "runSucceeded": true,
+      "runTerminal": true,
+      "retryAttempts": 0,
+      "rollbackCount": 0,
+      "meanTimeToRecoveryMs": null,
+      "endToEndLatencyMs": 209,
+      "approvalCount": 2
+    },
+    "auditVerified": true,
+    "approvals": "SIMULATED - NEVER REPRESENT AS HUMAN APPROVAL"
+  },
+  {
+    "scenario": "ambiguous",
+    "id": "c9c44f6b-bedf-4519-a0b7-bb8fd47e546c",
+    "status": "COMPLETE",
+    "revision": 2,
+    "metrics": {
+      "progressPercent": 100,
+      "runSucceeded": true,
+      "runTerminal": true,
+      "retryAttempts": 0,
+      "rollbackCount": 0,
+      "meanTimeToRecoveryMs": null,
+      "endToEndLatencyMs": 186,
+      "approvalCount": 2
+    },
+    "auditVerified": true,
+    "approvals": "SIMULATED - NEVER REPRESENT AS HUMAN APPROVAL"
+  }
+]

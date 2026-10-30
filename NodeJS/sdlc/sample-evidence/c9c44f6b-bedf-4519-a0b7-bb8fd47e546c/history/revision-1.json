@@ -1,0 +1,200 @@
+{
+  "id": "c9c44f6b-bedf-4519-a0b7-bb8fd47e546c",
+  "scenario": "ambiguous",
+  "requirement": "Make shortened URLs expire quickly by default.",
+  "ttlHours": null,
+  "revision": 1,
+  "createdAt": "2026-10-29T19:55:48.652Z",
+  "updatedAt": "2026-10-29T19:55:48.653Z",
+  "status": "WAITING_INPUT",
+  "reason": "Specify exact default expiration in hours (1–8760).",
+  "risk": "medium",
+  "nodes": {
+    "intake": {
+      "id": "intake",
+      "dependsOn": [],
+      "status": "PENDING",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "impact": {
+      "id": "impact",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "architecture": {
+      "id": "architecture",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "security_design": {
+      "id": "security_design",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "test_plan": {
+      "id": "test_plan",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "design_approval": {
+      "id": "design_approval",
+      "dependsOn": [
+        "impact",
+        "architecture",
+        "security_design",
+        "test_plan"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "implementation": {
+      "id": "implementation",
+      "dependsOn": [
+        "design_approval"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "test_generation": {
+      "id": "test_generation",
+      "dependsOn": [
+        "design_approval"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "qa": {
+      "id": "qa",
+      "dependsOn": [
+        "implementation",
+        "test_generation"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "security_validation": {
+      "id": "security_validation",
+      "dependsOn": [
+        "implementation"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "docs": {
+      "id": "docs",
+      "dependsOn": [
+        "qa",
+        "security_validation"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "release_assessment": {
+      "id": "release_assessment",
+      "dependsOn": [
+        "docs"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "release_approval": {
+      "id": "release_approval",
+      "dependsOn": [
+        "release_assessment"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    },
+    "summary": {
+      "id": "summary",
+      "dependsOn": [
+        "release_approval"
+      ],
+      "status": "PENDING",
+      "attempts": 0,
+      "elapsedMs": 0,
+      "digest": null,
+      "artifact": null,
+      "error": null
+    }
+  },
+  "approvals": {},
+  "decisions": [],
+  "fault": {
+    "once": false,
+    "always": false,
+    "used": false
+  },
+  "counters": {
+    "retryAttempts": 0,
+    "rollbackCount": 0,
+    "failures": 0,
+    "recoveries": [],
+    "startedAt": "2026-10-29T19:55:48.652Z"
+  },
+  "releaseDeployed": false
+}

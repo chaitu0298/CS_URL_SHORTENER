@@ -1,0 +1,5 @@
+{
+  "generated": "workspace/test/generated.test.mjs",
+  "scenario": "ambiguous",
+  "assertions": 1
+}

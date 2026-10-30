@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: shortener
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: local-only-password
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["node_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shortener -d shortener"]
+      interval: 3s
+      retries: 20
+  migrate:
+    build: .
+    environment: &dbvars
+      PGHOST: db
+      PGUSER: shortener
+      PGPASSWORD: local-only-password
+      PGDATABASE: shortener
+    command: ["node", "src/db-tool.mjs", "migrate"]
+    depends_on:
+      db: {condition: service_healthy}
+  api:
+    build: .
+    ports: ["3000:3000"]
+    environment:
+      <<: *dbvars
+      NODE_ENV: development
+      BASE_URL: http://localhost:3000
+      AUTH_MODE: apikey
+      API_KEY: local-demo-key
+      CORS_ORIGINS: http://localhost:5173
+      VISITOR_HASH_SECRET: only-for-local-development
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+volumes:
+  node_pg:

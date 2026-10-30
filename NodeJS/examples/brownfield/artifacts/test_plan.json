@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "HTTP integration",
+    "expiration",
+    "idempotency",
+    "analytics",
+    "security",
+    "scenario-specific regression"
+  ],
+  "command": "node --test test/*.test.mjs"
+}

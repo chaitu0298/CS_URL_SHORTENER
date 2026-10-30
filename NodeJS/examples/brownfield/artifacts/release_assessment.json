@@ -1,0 +1,7 @@
+{
+  "status": "READY_FOR_HUMAN_REVIEW",
+  "deployed": false,
+  "qa": "passed",
+  "security": "passed",
+  "remainingRisk": "prototype persistence and local-only identity"
+}

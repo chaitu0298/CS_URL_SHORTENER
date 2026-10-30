@@ -1,0 +1,16 @@
+{
+  "scenario": "greenfield",
+  "revision": 1,
+  "outcome": "validated, approved, not deployed",
+  "metrics": {
+    "retries": 1,
+    "rollbacks": 0,
+    "failures": 0,
+    "recoveries": 1,
+    "mttrMs": 184
+  },
+  "assumptions": [
+    "Local demonstration",
+    "No real autonomous deployment"
+  ]
+}

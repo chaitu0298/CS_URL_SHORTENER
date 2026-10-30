@@ -1,0 +1,10 @@
+{
+  "intent": "Create URL shortener and analytics APIs",
+  "type": "greenfield",
+  "ttlHours": null,
+  "revision": 1,
+  "assumptions": [
+    "local-only prototype",
+    "no autonomous deployment"
+  ]
+}

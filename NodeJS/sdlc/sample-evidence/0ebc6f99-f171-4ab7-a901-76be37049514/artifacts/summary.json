@@ -1,0 +1,27 @@
+{
+  "outcome": "Approved engineering proposal, NOT deployed",
+  "scenario": "greenfield",
+  "revision": 1,
+  "artifacts": [
+    "workspace/src",
+    "workspace/test/generated.test.mjs",
+    "artifacts/qa.log"
+  ],
+  "metrics": {
+    "progressPercent": 93,
+    "runSucceeded": false,
+    "runTerminal": false,
+    "retryAttempts": 1,
+    "rollbackCount": 0,
+    "meanTimeToRecoveryMs": 365,
+    "endToEndLatencyMs": 398,
+    "approvalCount": 2
+  },
+  "risks": [
+    "Production deployment requires separate human change approval"
+  ],
+  "approvalIds": [
+    "design_approval",
+    "release_approval"
+  ]
+}

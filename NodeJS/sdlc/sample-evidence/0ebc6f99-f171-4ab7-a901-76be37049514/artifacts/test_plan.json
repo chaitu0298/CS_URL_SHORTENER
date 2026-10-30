@@ -1,0 +1,13 @@
+{
+  "targets": [
+    "src/server.mjs",
+    "src/postgres-store.mjs"
+  ],
+  "command": "node --test test/generated.test.mjs",
+  "checks": [
+    "scenario acceptance",
+    "negative/security paths",
+    "regression of existing API boundaries"
+  ],
+  "postgresql": "additional live integration verification required prior to production release"
+}

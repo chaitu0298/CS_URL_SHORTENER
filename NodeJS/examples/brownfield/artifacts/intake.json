@@ -1,0 +1,10 @@
+{
+  "intent": "Reject support-desk custom alias without breaking existing links",
+  "type": "brownfield",
+  "ttlHours": null,
+  "revision": 1,
+  "assumptions": [
+    "local-only prototype",
+    "no autonomous deployment"
+  ]
+}

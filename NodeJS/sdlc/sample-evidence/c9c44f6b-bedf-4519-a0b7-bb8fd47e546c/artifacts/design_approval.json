@@ -1,0 +1,8 @@
+{
+  "gate": "design_approval",
+  "actor": "SIMULATED_DESIGN_REVIEWER",
+  "reason": "DEMO ONLY - simulated signoff, not real human approval",
+  "revision": 2,
+  "depDigest": "2530d8bd6a0c0d5f31013bc81a9332cb81ecacb331c356ab0c8ec3a8467ae3cb",
+  "approvedAt": "2026-10-29T19:55:48.659Z"
+}

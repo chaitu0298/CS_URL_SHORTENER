@@ -1,0 +1,235 @@
+{
+  "id": "0ebc6f99-f171-4ab7-a901-76be37049514",
+  "scenario": "greenfield",
+  "requirement": "Add an authenticated bulk revoke API so an owner can revoke multiple short links in one request.",
+  "ttlHours": null,
+  "revision": 1,
+  "createdAt": "2026-10-29T19:55:48.043Z",
+  "updatedAt": "2026-10-29T19:55:48.442Z",
+  "status": "COMPLETE",
+  "reason": null,
+  "risk": "medium",
+  "nodes": {
+    "intake": {
+      "id": "intake",
+      "dependsOn": [],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 2,
+      "digest": "07cd5c4a90793f884016c4320c78a3e2166ad1e255a6466bd53eb9bce9fa631f",
+      "artifact": "artifacts/intake.json",
+      "error": null
+    },
+    "impact": {
+      "id": "impact",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 2,
+      "digest": "9eba7fdb5214f4c2cddc9f02e60aa7c2b4178b6d823536648df0757da5f1e6a5",
+      "artifact": "artifacts/impact.json",
+      "error": null
+    },
+    "architecture": {
+      "id": "architecture",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 1,
+      "digest": "825dbe54ad094d69f106501b73bdc2a4e3b63bbdde4e6c09a0d7365633dd603b",
+      "artifact": "artifacts/architecture.md",
+      "error": null
+    },
+    "security_design": {
+      "id": "security_design",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 1,
+      "digest": "c64dbdc698f65a108afe666c7b8f48219c813ef410a895cd4d8291ed8eb8890e",
+      "artifact": "artifacts/security_design.json",
+      "error": null
+    },
+    "test_plan": {
+      "id": "test_plan",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 1,
+      "digest": "fd9b7b8ab25769aec3c1969e508a1a42d867ca5ba59cfa3c9afdaa99617b8fba",
+      "artifact": "artifacts/test_plan.json",
+      "error": null
+    },
+    "design_approval": {
+      "id": "design_approval",
+      "dependsOn": [
+        "impact",
+        "architecture",
+        "security_design",
+        "test_plan"
+      ],
+      "status": "COMPLETE",
+      "attempts": 3,
+      "elapsedMs": 3,
+      "digest": "24ba8b8b631d675a8fe854ce26a831cfeaa83e92b10beb339b43d46bb0159177",
+      "artifact": "artifacts/design_approval.json",
+      "error": null
+    },
+    "implementation": {
+      "id": "implementation",
+      "dependsOn": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 2,
+      "digest": "ee4f178bcdc360b136724836ab9a3ef2edd64c613138dc1978e5e3485249825d",
+      "artifact": "artifacts/implementation.json",
+      "error": null
+    },
+    "test_generation": {
+      "id": "test_generation",
+      "dependsOn": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "90e209aecad6feaaaf5f166d16b7aac34bc8fa0184162eb36bd26cd3c2a97b28",
+      "artifact": "artifacts/test_generation.json",
+      "error": null
+    },
+    "qa": {
+      "id": "qa",
+      "dependsOn": [
+        "implementation",
+        "test_generation"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "elapsedMs": 366,
+      "digest": "8bb4760c5703c2660dc8b9e31b9663165e3d0bc25595a4a4020ff91b0b060e55",
+      "artifact": "artifacts/qa.json",
+      "error": null
+    },
+    "security_validation": {
+      "id": "security_validation",
+      "dependsOn": [
+        "implementation"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 365,
+      "digest": "40714785602ff8a44d87f75b090961fe2c9b13fd76ababe3d11405ef24c10505",
+      "artifact": "artifacts/security_validation.json",
+      "error": null
+    },
+    "docs": {
+      "id": "docs",
+      "dependsOn": [
+        "qa",
+        "security_validation"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "df8a9a6af26e275c2d39ab8c4737607aed9947657dc725664b5a7d859cfbcc07",
+      "artifact": "artifacts/docs.md",
+      "error": null
+    },
+    "release_assessment": {
+      "id": "release_assessment",
+      "dependsOn": [
+        "docs"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "817716c9f05f2ed73ca31ffe8247f0413171c23fa3ffffc6f7eee154d8d27306",
+      "artifact": "artifacts/release_assessment.json",
+      "error": null
+    },
+    "release_approval": {
+      "id": "release_approval",
+      "dependsOn": [
+        "release_assessment"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "elapsedMs": 0,
+      "digest": "283494052fdf5472d37622302ed84104f96234ef396580ab4cafa7aabd577f3b",
+      "artifact": "artifacts/release_approval.json",
+      "error": null
+    },
+    "summary": {
+      "id": "summary",
+      "dependsOn": [
+        "release_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 1,
+      "digest": "c1ce6aabbd6b49633aa6f69ba05090a0c71bdf653899d0774a886a11eec0acfe",
+      "artifact": "artifacts/summary.json",
+      "error": null
+    }
+  },
+  "approvals": {
+    "design_approval": {
+      "gate": "design_approval",
+      "actor": "SIMULATED_DESIGN_REVIEWER",
+      "reason": "DEMO ONLY - simulated signoff, not real human approval",
+      "revision": 1,
+      "depDigest": "1cd343b1fbda9ad906d9f4ff37563043048c331f6677240106c46454cdc2f6eb",
+      "approvedAt": "2026-10-29T19:55:48.062Z"
+    },
+    "release_approval": {
+      "gate": "release_approval",
+      "actor": "SIMULATED_RELEASE_REVIEWER",
+      "reason": "DEMO ONLY - simulated signoff, not real human approval",
+      "revision": 1,
+      "depDigest": "e78057848f1c178f173d970a539e79feb329dd81560b957de06738d109c2f9e3",
+      "approvedAt": "2026-10-29T19:55:48.440Z"
+    }
+  },
+  "decisions": [
+    {
+      "kind": "APPROVAL",
+      "gate": "design_approval",
+      "actor": "SIMULATED_DESIGN_REVIEWER",
+      "revision": 1
+    },
+    {
+      "kind": "APPROVAL",
+      "gate": "release_approval",
+      "actor": "SIMULATED_RELEASE_REVIEWER",
+      "revision": 1
+    }
+  ],
+  "fault": {
+    "once": true,
+    "always": false,
+    "used": true
+  },
+  "counters": {
+    "retryAttempts": 1,
+    "rollbackCount": 0,
+    "failures": 0,
+    "recoveries": [
+      {
+        "node": "qa",
+        "durationMs": 365
+      }
+    ],
+    "startedAt": "2026-10-29T19:55:48.044Z"
+  },
+  "releaseDeployed": false
+}

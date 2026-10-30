@@ -1,0 +1,9 @@
+{
+  "modules": [
+    "src/shortener.mjs",
+    "src/server.mjs",
+    "test/service.test.mjs"
+  ],
+  "change": "modify default TTL policy",
+  "revision": 2
+}

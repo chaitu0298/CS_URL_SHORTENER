@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "checks": [
+    "No dynamic eval",
+    "Restricted patch paths",
+    "No deployment",
+    "Owner-scoped access checked for bulk route"
+  ],
+  "limitation": "Static guardrails do not replace SAST or DAST"
+}

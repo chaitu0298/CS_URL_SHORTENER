@@ -1,0 +1,12 @@
+{
+  "kind": "codebase impact",
+  "files": [
+    {
+      "file": "src/postgres-store.mjs",
+      "sha256": "2f0e1c3faa506eff3b46e1d8e05c0202ce387765aff3c54ca18b95708d243433",
+      "exists": true
+    }
+  ],
+  "flow": "HTTP /api/v1/links → server.mjs → postgres-store.mjs → PostgreSQL",
+  "deployment": "No deployment performed"
+}

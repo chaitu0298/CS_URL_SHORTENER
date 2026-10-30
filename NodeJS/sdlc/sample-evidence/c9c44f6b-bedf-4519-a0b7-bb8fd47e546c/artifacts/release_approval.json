@@ -1,0 +1,8 @@
+{
+  "gate": "release_approval",
+  "actor": "SIMULATED_RELEASE_REVIEWER",
+  "reason": "DEMO ONLY - simulated signoff, not real human approval",
+  "revision": 2,
+  "depDigest": "e78057848f1c178f173d970a539e79feb329dd81560b957de06738d109c2f9e3",
+  "approvedAt": "2026-10-29T19:55:48.835Z"
+}

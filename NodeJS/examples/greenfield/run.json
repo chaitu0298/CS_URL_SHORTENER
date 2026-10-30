@@ -1,0 +1,219 @@
+{
+  "id": "1d019208-6c2d-40ae-aa4f-6af25b81b746",
+  "type": "greenfield",
+  "requirement": "Create URL shortener and analytics APIs",
+  "ttlHours": null,
+  "revision": 1,
+  "status": "COMPLETE",
+  "reason": null,
+  "createdAt": "2026-10-28T22:38:46.346Z",
+  "updatedAt": "2026-10-28T22:38:46.545Z",
+  "approval": {
+    "design_approval": {
+      "actor": "Demo Reviewer",
+      "reason": "Reviewed architecture, security and acceptance criteria",
+      "revision": 1,
+      "at": "2026-10-28T22:38:46.354Z",
+      "dependencyDigests": [
+        "bdb3e8b6871eeb59351943e2ed5dbe2f227526d62c566a1813efd40e55df518e",
+        "3697b7752f16a0019bd3e79645b89599e5f897a14c85e41395f85e134bda1f68",
+        "8697b18f9f03c93f738a5de84e5fb97502fb78b6e91c11f53f715b5d8953316c",
+        "3a4780142af646d912f5830834a1e0763941c90538122a735465f6de5a32d555"
+      ]
+    },
+    "release_approval": {
+      "actor": "Demo Reviewer",
+      "reason": "Validated tests and reviewed residual risks",
+      "revision": 1,
+      "at": "2026-10-28T22:38:46.543Z",
+      "dependencyDigests": [
+        "4e6abf4c16b5bce89546a5a0164c8fdb67983083281b0d62d44147e8a9251d01"
+      ]
+    }
+  },
+  "decisions": [
+    {
+      "gate": "design_approval",
+      "actor": "Demo Reviewer",
+      "reason": "Reviewed architecture, security and acceptance criteria",
+      "revision": 1
+    },
+    {
+      "gate": "release_approval",
+      "actor": "Demo Reviewer",
+      "reason": "Validated tests and reviewed residual risks",
+      "revision": 1
+    }
+  ],
+  "nodes": {
+    "intake": {
+      "id": "intake",
+      "deps": [],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/intake.json",
+      "digest": "4565c54176f74c2aa694b2c9e3f21f873aa86dcb4885099f3ff2a11da2db3ca7"
+    },
+    "impact": {
+      "id": "impact",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 2,
+      "artifact": "artifacts/impact.json",
+      "digest": "bdb3e8b6871eeb59351943e2ed5dbe2f227526d62c566a1813efd40e55df518e"
+    },
+    "architecture": {
+      "id": "architecture",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 2,
+      "artifact": "artifacts/architecture.md",
+      "digest": "3697b7752f16a0019bd3e79645b89599e5f897a14c85e41395f85e134bda1f68"
+    },
+    "threat_model": {
+      "id": "threat_model",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 1,
+      "artifact": "artifacts/threat_model.json",
+      "digest": "8697b18f9f03c93f738a5de84e5fb97502fb78b6e91c11f53f715b5d8953316c"
+    },
+    "test_plan": {
+      "id": "test_plan",
+      "deps": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/test_plan.json",
+      "digest": "3a4780142af646d912f5830834a1e0763941c90538122a735465f6de5a32d555"
+    },
+    "design_approval": {
+      "id": "design_approval",
+      "deps": [
+        "impact",
+        "architecture",
+        "threat_model",
+        "test_plan"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "ms": 0,
+      "artifact": "artifacts/design_approval.json",
+      "digest": "27760c97613c6a869c6fa30a0e0ea131402c6342dcc9e6d3eae6f7901cee4a82"
+    },
+    "implement": {
+      "id": "implement",
+      "deps": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 2,
+      "artifact": "artifacts/implement.json",
+      "digest": "d3ec202212e160754f7ef7e6d57adcf32937b50b73334149d4bf86fedf3b2c54"
+    },
+    "generate_tests": {
+      "id": "generate_tests",
+      "deps": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 1,
+      "artifact": "artifacts/generate_tests.json",
+      "digest": "710289251d991c7072338398fbd947bee588520c94cc983c013c4a666886a485"
+    },
+    "qa": {
+      "id": "qa",
+      "deps": [
+        "implement",
+        "generate_tests"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "ms": 184,
+      "artifact": "artifacts/qa.json",
+      "digest": "2c5b0bd9d0f7f84d3faf78116702d5f461fb26c25f263b196f3fc10bbb3d6e00"
+    },
+    "security": {
+      "id": "security",
+      "deps": [
+        "implement"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 184,
+      "artifact": "artifacts/security.json",
+      "digest": "2940c4fe72dcd858797ce010c41c8a7c61e3a5f0618bca94d212030487ddda62"
+    },
+    "docs": {
+      "id": "docs",
+      "deps": [
+        "qa"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/docs.md",
+      "digest": "d877923dca975fe34e70f714db7dbb85e7ec20ac003c2ead4ccb5822e3eb7ffe"
+    },
+    "release_assessment": {
+      "id": "release_assessment",
+      "deps": [
+        "docs",
+        "security"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/release_assessment.json",
+      "digest": "4e6abf4c16b5bce89546a5a0164c8fdb67983083281b0d62d44147e8a9251d01"
+    },
+    "release_approval": {
+      "id": "release_approval",
+      "deps": [
+        "release_assessment"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "ms": 1,
+      "artifact": "artifacts/release_approval.json",
+      "digest": "19f890dfc65a26015c5e9d4f1e14ebc2f0729ff70479834f05c5bec3f2313a71"
+    },
+    "summary": {
+      "id": "summary",
+      "deps": [
+        "release_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "ms": 0,
+      "artifact": "artifacts/summary.json",
+      "digest": "82156071057724ad2cfc8620184ceca1b44d3f22d789167bbb2769eb2b46bbfc"
+    }
+  },
+  "metrics": {
+    "retries": 1,
+    "rollbacks": 0,
+    "failures": 0,
+    "recoveries": 1,
+    "mttrMs": 184
+  },
+  "fault": {
+    "qaOnce": true,
+    "qaAlways": false,
+    "used": true
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-28",
+  "nodeVersion": "v22.16.0",
+  "scenarios": [
+    {
+      "scenario": "greenfield",
+      "runId": "1d019208-6c2d-40ae-aa4f-6af25b81b746",
+      "status": "COMPLETE",
+      "revision": 1,
+      "metrics": {
+        "completed": 14,
+        "total": 14,
+        "successRate": 1,
+        "retries": 1,
+        "rollbacks": 0,
+        "mttrMs": 184,
+        "endToEndLatencyMs": 199
+      },
+      "auditVerified": true
+    },
+    {
+      "scenario": "brownfield",
+      "runId": "f0b1b683-937c-420f-bb6f-6980a95b1227",
+      "status": "COMPLETE",
+      "revision": 1,
+      "metrics": {
+        "completed": 14,
+        "total": 14,
+        "successRate": 1,
+        "retries": 0,
+        "rollbacks": 0,
+        "mttrMs": 0,
+        "endToEndLatencyMs": 202
+      },
+      "auditVerified": true
+    },
+    {
+      "scenario": "ambiguous",
+      "runId": "bdc75dd1-dfc9-4d55-b190-8b2b0da66206",
+      "status": "COMPLETE",
+      "revision": 2,
+      "metrics": {
+        "completed": 14,
+        "total": 14,
+        "successRate": 1,
+        "retries": 0,
+        "rollbacks": 0,
+        "mttrMs": 0,
+        "endToEndLatencyMs": 183
+      },
+      "auditVerified": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "files": [
+    "workspace/test/service.test.mjs",
+    "workspace/test/generated.test.mjs"
+  ],
+  "checks": "greenfield"
+}

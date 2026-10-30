@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "checks": [
+    "No dynamic execution",
+    "No deploy",
+    "Bounded write paths",
+    "Two approvals"
+  ]
+}

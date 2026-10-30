@@ -1,0 +1,17 @@
+{
+  "decision": "REVIEW_REQUIRED",
+  "unitTests": "passed",
+  "staticSecurity": "passed",
+  "productionDeployment": false,
+  "limitations": [
+    "No live PostgreSQL integration in generated workspace",
+    "No CI build or ECS deployment performed",
+    "Review source diff before applying"
+  ],
+  "requiredActions": [
+    "Review patch",
+    "Run backend full tests",
+    "Run DB integration and security checks",
+    "Approve separately before deploying"
+  ]
+}

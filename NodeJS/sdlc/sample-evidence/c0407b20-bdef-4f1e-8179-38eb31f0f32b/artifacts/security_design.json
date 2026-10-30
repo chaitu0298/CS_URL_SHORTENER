@@ -1,0 +1,16 @@
+{
+  "risks": [
+    "Unsafe redirects and URL abuse",
+    "Unauthorized code modification",
+    "Auth bypass",
+    "Tampered audit history"
+  ],
+  "controls": [
+    "Restricted file allowlist",
+    "Owner-scoped SQL",
+    "Approval bound to revision and evidence digests",
+    "No arbitrary shell commands from requirements",
+    "No deploy credentials in runner"
+  ],
+  "riskLevel": "high"
+}

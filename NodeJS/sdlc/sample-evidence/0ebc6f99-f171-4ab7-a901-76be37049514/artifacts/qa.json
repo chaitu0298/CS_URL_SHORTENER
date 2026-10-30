@@ -1,0 +1,6 @@
+{
+  "passed": 2,
+  "failed": 0,
+  "log": "artifacts/qa.log",
+  "command": "node --test test/generated.test.mjs"
+}

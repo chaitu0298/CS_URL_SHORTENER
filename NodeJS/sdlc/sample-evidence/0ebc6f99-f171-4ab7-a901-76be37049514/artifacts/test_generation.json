@@ -1,0 +1,5 @@
+{
+  "generated": "workspace/test/generated.test.mjs",
+  "scenario": "greenfield",
+  "assertions": 2
+}

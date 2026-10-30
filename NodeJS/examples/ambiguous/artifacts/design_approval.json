@@ -1,0 +1,12 @@
+{
+  "actor": "Demo Reviewer",
+  "reason": "Reviewed architecture, security and acceptance criteria",
+  "revision": 2,
+  "at": "2026-10-28T22:38:46.755Z",
+  "dependencyDigests": [
+    "0c7baedbb3e7add51b854c12d30ec691ecfb2ccedc45b7a4acb7a0dba0b52516",
+    "aac6ee68d6a302024f7f19ac469417c2edb94e22d5ef63fe8913de7bbf80ccb4",
+    "8697b18f9f03c93f738a5de84e5fb97502fb78b6e91c11f53f715b5d8953316c",
+    "3a4780142af646d912f5830834a1e0763941c90538122a735465f6de5a32d555"
+  ]
+}

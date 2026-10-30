@@ -1,0 +1,10 @@
+{
+  "intent": "Make short links expire quickly by default",
+  "type": "ambiguous",
+  "ttlHours": 48,
+  "revision": 2,
+  "assumptions": [
+    "local-only prototype",
+    "no autonomous deployment"
+  ]
+}

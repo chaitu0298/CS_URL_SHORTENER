@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "command": "node --test",
+  "output": "artifacts/qa.log",
+  "checks": 6
+}

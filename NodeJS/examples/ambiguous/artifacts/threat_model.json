@@ -1,0 +1,15 @@
+{
+  "risks": [
+    "URL abuse/phishing",
+    "key management",
+    "bounded API requests",
+    "audit log tampering"
+  ],
+  "controls": [
+    "restricted patch targets",
+    "two review checkpoints",
+    "HTTP auth",
+    "hash-chain audit"
+  ],
+  "deployment": "prohibited"
+}

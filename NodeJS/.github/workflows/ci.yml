@@ -1,0 +1,24 @@
+name: Node PostgreSQL and agentic workflow tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        ports: ['5432:5432']
+        env:
+          POSTGRES_PASSWORD: test-password
+          POSTGRES_USER: shortener
+          POSTGRES_DB: shortener_test
+        options: >-
+          --health-cmd="pg_isready -U shortener -d shortener_test"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+    env:
+      PG_TEST_URL: postgres://shortener:test-password@localhost:5432/shortener_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test

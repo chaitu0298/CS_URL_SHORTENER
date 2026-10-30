@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: AWS-ready URL shortener
+  version: 2.0.0
+  description: PostgreSQL-backed short URL service with Cognito JWT authentication for management APIs. The CLI agentic workflow is separate.
+servers:
+  - url: https://go.example.com
+    description: Set your deployed HTTPS domain
+  - url: http://localhost:3000
+    description: Node local
+  - url: http://localhost:8080
+    description: Spring Boot local
+components:
+  securitySchemes:
+    CognitoAccessToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Signed Cognito ACCESS token with token_use access, matching issuer and client_id
+    DevelopmentApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Local development only, never put in a browser frontend
+  schemas:
+    CreateRequest:
+      type: object
+      required: [url]
+      additionalProperties: false
+      properties:
+        url: {type: string, format: uri, maxLength: 2048, example: 'https://example.org/path'}
+        alias: {type: string, pattern: '^[A-Za-z0-9_-]{4,32}$', example: 'launch26'}
+        ttlHours: {type: integer, minimum: 1, maximum: 8760, example: 48}
+        expiresAt: {type: string, format: date-time, example: '2026-12-31T23:59:59Z'}
+      description: Provide either ttlHours or expiresAt, not both; default 30 days, max 365 days.
+    Link:
+      type: object
+      properties:
+        code: {type: string, example: 'launch26'}
+        shortUrl: {type: string, format: uri, example: 'https://go.example.com/launch26'}
+        destination: {type: string, format: uri}
+        createdAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+        revokedAt: {type: string, format: date-time, nullable: true}
+        clicks: {type: integer, format: int64}
+    CreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/Link'
+        - type: object
+          properties:
+            replay: {type: boolean}
+    Analytics:
+      type: object
+      properties:
+        code: {type: string}
+        destination: {type: string, format: uri}
+        clicks: {type: integer, format: int64}
+        uniqueVisitors: {type: integer, format: int64}
+        dailyClicks:
+          type: object
+          additionalProperties: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+        revokedAt: {type: string, format: date-time, nullable: true}
+paths:
+  /health:
+    get:
+      summary: Liveness
+      responses:
+        '200': {description: Application running}
+  /ready:
+    get:
+      summary: DB readiness
+      responses:
+        '200': {description: Database reachable}
+        '500': {description: Database not ready}
+  /api/v1/links:
+    post:
+      summary: Create a short link
+      security: [{CognitoAccessToken: []}]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          schema: {type: string, minLength: 8, maxLength: 128}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateRequest'}
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CreateResponse'}
+        '200': {description: Idempotent replay}
+        '400': {description: Validation failure}
+        '401': {description: Authentication failed}
+        '409': {description: Alias/key conflict}
+        '429': {description: Rate limit}
+    get:
+      summary: List links owned by authenticated user
+      security: [{CognitoAccessToken: []}]
+      parameters:
+        - in: query
+          name: page
+          schema: {type: integer, minimum: 0, default: 0}
+        - in: query
+          name: size
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        '200': {description: '{items, page, size, total}'}
+        '401': {description: Authentication failed}
+  /api/v1/links/{code}:
+    delete:
+      summary: Revoke link (retains analytics and prevents further redirects)
+      security: [{CognitoAccessToken: []}]
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: {type: string}
+      responses:
+        '204': {description: Revoked or already revoked}
+        '404': {description: Not found or not owned}
+  /api/v1/links/{code}/analytics:
+    get:
+      summary: View owner-only analytics
+      security: [{CognitoAccessToken: []}]
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Aggregated analytics
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Analytics'}
+        '404': {description: Not found or not owned}
+  /{code}:
+    get:
+      summary: Public redirect
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: {type: string}
+      responses:
+        '302':
+          description: Redirect to destination
+          headers:
+            Location: {schema: {type: string, format: uri}}
+        '404': {description: Link unknown or deleted after retention}
+        '410': {description: Link expired or revoked}

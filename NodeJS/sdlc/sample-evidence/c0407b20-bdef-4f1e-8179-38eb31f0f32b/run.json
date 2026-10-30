@@ -1,0 +1,243 @@
+{
+  "id": "c0407b20-bdef-4f1e-8179-38eb31f0f32b",
+  "scenario": "brownfield",
+  "requirement": "Reject misleading support-desk and security-team aliases while keeping existing URLs working.",
+  "ttlHours": null,
+  "revision": 1,
+  "createdAt": "2026-10-29T19:55:48.443Z",
+  "updatedAt": "2026-10-29T19:55:48.652Z",
+  "status": "COMPLETE",
+  "reason": null,
+  "risk": "high",
+  "nodes": {
+    "intake": {
+      "id": "intake",
+      "dependsOn": [],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "0a74a48f07a6c5ca63b7c743ed653d77aae396f994696b1c657e1d2a2b7a8fa6",
+      "artifact": "artifacts/intake.json",
+      "error": null
+    },
+    "impact": {
+      "id": "impact",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 2,
+      "digest": "f0edac819790a5459d259e01d13868fdbc0f6d4861b5ffac49fe7b94f5745b16",
+      "artifact": "artifacts/impact.json",
+      "error": null
+    },
+    "architecture": {
+      "id": "architecture",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "3d5c2883b2bb843534b23ca6f29aab7cc883a7cd5aec1f2df3ab8eafdfe5f8d6",
+      "artifact": "artifacts/architecture.md",
+      "error": null
+    },
+    "security_design": {
+      "id": "security_design",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "23b56d10fe793e425db2aae49957c158eb0eee12fed0cdb0097c433086ec5cbd",
+      "artifact": "artifacts/security_design.json",
+      "error": null
+    },
+    "test_plan": {
+      "id": "test_plan",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "5e21a5203c84f1ee55318734c932cf95d6356027f539ef03d439240cb02c2261",
+      "artifact": "artifacts/test_plan.json",
+      "error": null
+    },
+    "design_approval": {
+      "id": "design_approval",
+      "dependsOn": [
+        "impact",
+        "architecture",
+        "security_design",
+        "test_plan",
+        "abuse_policy"
+      ],
+      "status": "COMPLETE",
+      "attempts": 3,
+      "elapsedMs": 2,
+      "digest": "2f588c1d9fcd8ae2e07c8b65806f59e556daf3869dc54dad8dd4c977f872dc8e",
+      "artifact": "artifacts/design_approval.json",
+      "error": null
+    },
+    "implementation": {
+      "id": "implementation",
+      "dependsOn": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 2,
+      "digest": "2b20c06aa4e0cc21dcb62be6e96fa0ddc2ee702d2afe93e079622b7411941fca",
+      "artifact": "artifacts/implementation.json",
+      "error": null
+    },
+    "test_generation": {
+      "id": "test_generation",
+      "dependsOn": [
+        "design_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "9d4300f04086285c561abfacf7d6cd592481b9e83d14d6164288d44e44d1542c",
+      "artifact": "artifacts/test_generation.json",
+      "error": null
+    },
+    "qa": {
+      "id": "qa",
+      "dependsOn": [
+        "implementation",
+        "test_generation"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 184,
+      "digest": "a2b35a0269e8053737eeec7ede9e072fdf8b92f00484f0e0b6525db2ee88eddf",
+      "artifact": "artifacts/qa.json",
+      "error": null
+    },
+    "security_validation": {
+      "id": "security_validation",
+      "dependsOn": [
+        "implementation"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "40714785602ff8a44d87f75b090961fe2c9b13fd76ababe3d11405ef24c10505",
+      "artifact": "artifacts/security_validation.json",
+      "error": null
+    },
+    "docs": {
+      "id": "docs",
+      "dependsOn": [
+        "qa",
+        "security_validation"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "3df04f5cd386ce966c1ac351077f0a8fcd86daf49060dcceb6530088903d37e1",
+      "artifact": "artifacts/docs.md",
+      "error": null
+    },
+    "release_assessment": {
+      "id": "release_assessment",
+      "dependsOn": [
+        "docs"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "817716c9f05f2ed73ca31ffe8247f0413171c23fa3ffffc6f7eee154d8d27306",
+      "artifact": "artifacts/release_assessment.json",
+      "error": null
+    },
+    "release_approval": {
+      "id": "release_approval",
+      "dependsOn": [
+        "release_assessment"
+      ],
+      "status": "COMPLETE",
+      "attempts": 2,
+      "elapsedMs": 4,
+      "digest": "5bf1cda30e2cc381d4a541babd78b05c6eca9a94fff3cb77c2cc2cb3b745961c",
+      "artifact": "artifacts/release_approval.json",
+      "error": null
+    },
+    "summary": {
+      "id": "summary",
+      "dependsOn": [
+        "release_approval"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "a5a9cb3a7b43a8412417c3745b601556bc007cd4fe7d9c5da66fa549271c9c8f",
+      "artifact": "artifacts/summary.json",
+      "error": null
+    },
+    "abuse_policy": {
+      "id": "abuse_policy",
+      "dependsOn": [
+        "intake"
+      ],
+      "status": "COMPLETE",
+      "attempts": 1,
+      "elapsedMs": 0,
+      "digest": "dd8036b29ce6cd0abd53f522b9c1eb4a5eb694d3c9e7efbca471ea87e98e4a8b",
+      "artifact": "artifacts/abuse_policy.json",
+      "error": null
+    }
+  },
+  "approvals": {
+    "design_approval": {
+      "gate": "design_approval",
+      "actor": "SIMULATED_DESIGN_REVIEWER",
+      "reason": "DEMO ONLY - simulated signoff, not real human approval",
+      "revision": 1,
+      "depDigest": "f8dcdfd840de62307c26492ace71c497161347b32491ceef9bf67872509179be",
+      "approvedAt": "2026-10-29T19:55:48.450Z"
+    },
+    "release_approval": {
+      "gate": "release_approval",
+      "actor": "SIMULATED_RELEASE_REVIEWER",
+      "reason": "DEMO ONLY - simulated signoff, not real human approval",
+      "revision": 1,
+      "depDigest": "e78057848f1c178f173d970a539e79feb329dd81560b957de06738d109c2f9e3",
+      "approvedAt": "2026-10-29T19:55:48.645Z"
+    }
+  },
+  "decisions": [
+    {
+      "kind": "APPROVAL",
+      "gate": "design_approval",
+      "actor": "SIMULATED_DESIGN_REVIEWER",
+      "revision": 1
+    },
+    {
+      "kind": "APPROVAL",
+      "gate": "release_approval",
+      "actor": "SIMULATED_RELEASE_REVIEWER",
+      "revision": 1
+    }
+  ],
+  "fault": {
+    "once": false,
+    "always": false,
+    "used": false
+  },
+  "counters": {
+    "retryAttempts": 0,
+    "rollbackCount": 0,
+    "failures": 0,
+    "recoveries": [],
+    "startedAt": "2026-10-29T19:55:48.443Z"
+  },
+  "releaseDeployed": false
+}

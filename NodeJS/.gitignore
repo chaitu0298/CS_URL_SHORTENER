@@ -1,0 +1,6 @@
+runs/
+data/
+node_modules/
+*.log
+# Isolated SDLC run artifacts, reviewer decisions and source snapshots
+.sdlc-runs/
